@@ -1,4 +1,4 @@
-package store
+package user
 
 import (
 	"net/http"
@@ -13,67 +13,63 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Store struct {
+type User struct {
 	gorm.Model
-	Name         string            `json:"name"`
-	Email        string            `json:"email" gorm:"unique"`
-	Password     string            `json:"-"`
-	Phone        string            `json:"phone"`
-	Open         string            `json:"open"`
-	Close        string            `json:"close"`
-	DeliveryTime string            `json:"delivery_time"`
-	Address      []address.Address `json:"address" gorm:"polymorphic:Owner;polymorphicValue:stores"`
-	TypeID       int               `json:"type_id"`
+	Name     string            `json:"name"`
+	Email    string            `json:"email" gorm:"unique"`
+	Password string            `json:"-"`
+	Phone    string            `json:"phone"`
+	Address  []address.Address `json:"address" gorm:"polymorphic:Owner;polymorphicValue:users"`
 }
 
 func GetAll(c *fiber.Ctx) {
 	db := database.DBConn
 
-	var stores []Store
-	db.Preload("Address").Find(&stores)
+	var users []User
+	db.Preload("Address").Find(&users)
 
-	c.JSON(stores)
+	c.JSON(users)
 }
 
 func New(c *fiber.Ctx) {
 	db := database.DBConn
 
-	store := new(Store)
-	if err := c.BodyParser(&store); err != nil {
+	user := new(User)
+	if err := c.BodyParser(&user); err != nil {
 		c.Status(http.StatusServiceUnavailable).JSON(response.Error{Message: err.Error()})
 		return
 	}
 
-	var cst Store
+	var cu User
 	var err error
-	res := db.Where("email = ?", store.Email).First(&cst)
+	res := db.Where("email = ?", user.Email).First(&cu)
 
 	if res.RowsAffected > 0 {
-		c.Status(http.StatusBadRequest).JSON(response.Error{Message: "Store with this email already exist."})
+		c.Status(http.StatusBadRequest).JSON(response.Error{Message: "User with this email already exist."})
 		return
 	}
 
-	store.Password, err = helpers.HashPassword(store.Password)
+	user.Password, err = helpers.HashPassword(user.Password)
 	if err != nil {
 		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: err.Error()})
 		return
 	}
 
-	if res = db.Create(store); res.Error != nil {
+	if res = db.Create(user); res.Error != nil {
 		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: err.Error()})
 		return
 	}
 
-	res = db.Where("email = ?", store.Email).First(&cst)
+	res = db.Where("email = ?", user.Email).First(&cu)
 
-	token, err := auth.GenerateJWT(cst.Name, cst.Email)
+	token, err := auth.GenerateJWT(cu.Name, cu.Email)
 	if err != nil {
 		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: err.Error()})
 		return
 	}
 
 	c.JSON(response.Auth{
-		Owner:       cst,
+		Owner:       cu,
 		AccessToken: token,
 	})
 	return
@@ -88,27 +84,27 @@ func Login(c *fiber.Ctx) {
 		return
 	}
 
-	var store Store
-	res := db.Where("email = ?", login.Email).First(&store)
+	var user User
+	res := db.Where("email = ?", login.Email).First(&user)
 
 	if res.RowsAffected == 0 {
-		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: "Store not found."})
+		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: "User not found."})
 		return
 	}
 
-	if !helpers.CheckPasswordHash(login.Password, store.Password) {
+	if !helpers.CheckPasswordHash(login.Password, user.Password) {
 		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: "Password incorrect."})
 		return
 	}
 
-	token, err := auth.GenerateJWT(store.Name, store.Email)
+	token, err := auth.GenerateJWT(user.Name, user.Email)
 	if err != nil {
 		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: err.Error()})
 		return
 	}
 
 	c.JSON(response.Auth{
-		Owner:       store,
+		Owner:       user,
 		AccessToken: token,
 	})
 }
