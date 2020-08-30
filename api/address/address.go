@@ -3,7 +3,7 @@ package address
 import (
 	"github.com/dinopuguh/bakulan-backend/database"
 	"github.com/gofiber/fiber"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Address struct {

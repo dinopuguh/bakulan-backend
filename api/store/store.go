@@ -10,14 +10,14 @@ import (
 	"github.com/dinopuguh/bakulan-backend/response"
 	"github.com/gofiber/fiber"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Store struct {
 	gorm.Model
 	Name         string            `json:"name"`
 	Email        string            `json:"email" gorm:"unique"`
-	Password     string            `json:"password"`
+	Password     string            `json:"-"`
 	Phone        string            `json:"phone"`
 	Open         string            `json:"open"`
 	Close        string            `json:"close"`
@@ -30,7 +30,10 @@ func GetAll(c *fiber.Ctx) {
 	db := database.DBConn
 
 	var stores []Store
-	db.Preload("Address").Find(&stores)
+	if res := db.Preload("Address").Find(&stores); res.Error != nil {
+		c.Status(http.StatusServiceUnavailable).JSON(response.Error{Message: res.Error.Error()})
+		return
+	}
 
 	c.JSON(stores)
 }
@@ -108,7 +111,7 @@ func Login(c *fiber.Ctx) {
 	}
 
 	c.JSON(response.Auth{
-			Owner: store,
-			AccessToken: token,
+		Owner:       store,
+		AccessToken: token,
 	})
 }
