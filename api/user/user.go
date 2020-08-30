@@ -10,14 +10,14 @@ import (
 	"github.com/dinopuguh/bakulan-backend/response"
 	"github.com/gofiber/fiber"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
 	Name     string            `json:"name"`
 	Email    string            `json:"email" gorm:"unique"`
-	Password string            `json:"-"`
+	Password string            `json:"password"`
 	Phone    string            `json:"phone"`
 	Address  []address.Address `json:"address" gorm:"polymorphic:Owner;polymorphicValue:users"`
 }
@@ -56,7 +56,7 @@ func New(c *fiber.Ctx) {
 	}
 
 	if res = db.Create(user); res.Error != nil {
-		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: err.Error()})
+		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: res.Error.Error()})
 		return
 	}
 
@@ -88,7 +88,7 @@ func Login(c *fiber.Ctx) {
 	res := db.Where("email = ?", login.Email).First(&user)
 
 	if res.RowsAffected == 0 {
-		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: "User not found."})
+		c.Status(http.StatusNotFound).JSON(response.Error{Message: "User not found."})
 		return
 	}
 
@@ -107,4 +107,24 @@ func Login(c *fiber.Ctx) {
 		Owner:       user,
 		AccessToken: token,
 	})
+}
+
+func Delete(c *fiber.Ctx) {
+	id := c.Params("id")
+	db := database.DBConn
+
+	var user User
+	res := db.First(&user, id)
+
+	if res.RowsAffected == 0 {
+		c.Status(http.StatusNotFound).JSON(response.Error{Message: "User not found."})
+		return
+	}
+
+	if res = db.Delete(&user); res.Error != nil {
+		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: res.Error.Error()})
+		return
+	}
+
+	c.JSON(response.Error{Message: "User deleted."})
 }

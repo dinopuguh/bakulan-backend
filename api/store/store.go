@@ -10,7 +10,7 @@ import (
 	"github.com/dinopuguh/bakulan-backend/response"
 	"github.com/gofiber/fiber"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Store struct {
