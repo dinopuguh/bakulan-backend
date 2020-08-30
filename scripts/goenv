@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# Usage: scripts/goenv
-#
-# Add .env file
-
-set -e
-cp .env.example .env

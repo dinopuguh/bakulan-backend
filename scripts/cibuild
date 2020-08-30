@@ -5,5 +5,4 @@
 
 set -e
 scripts/goget
-scripts/goenv
 scripts/gocover
