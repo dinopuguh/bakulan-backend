@@ -4,11 +4,12 @@ go:
 services:
   - postgresql
 env:
-  - BAKULAN_DB_USER=postgres
-  - BAKULAN_DB_PASSWORD=postgres
-  - BAKULAN_DB_HOST=localhost
-  - BAKULAN_DB_NAME=bakulan
-  - BAKULAN_DB_PORT=5432
+  global:
+    - BAKULAN_DB_USER=postgres
+    - BAKULAN_DB_PASSWORD=postgres
+    - BAKULAN_DB_HOST=localhost
+    - BAKULAN_DB_NAME=bakulan
+    - BAKULAN_DB_PORT=5432
 before_script:
   - psql -c 'create database bakulan;' -U postgres
 script:
