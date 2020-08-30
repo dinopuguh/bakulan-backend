@@ -2,20 +2,20 @@ package database
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
-	"github.com/dinopuguh/bakulan-backend/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var (
 	DBConn   *gorm.DB
-	User     = config.Config("DB_USER")
-	Password = config.Config("DB_PASSWORD")
-	Host     = config.Config("DB_HOST")
-	DB       = config.Config("DB_NAME")
-	Port     = config.Config("DB_PORT")
+	User     = os.Getenv("BAKULAN_DB_USER")
+	Password = os.Getenv("BAKULAN_DB_PASSWORD")
+	Host     = os.Getenv("BAKULAN_DB_HOST")
+	DB       = os.Getenv("BAKULAN_DB_NAME")
+	Port     = os.Getenv("BAKULAN_DB_PORT")
 )
 
 func Connect() (err error) {
