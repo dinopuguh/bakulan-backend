@@ -30,7 +30,10 @@ func GetAll(c *fiber.Ctx) {
 	db := database.DBConn
 
 	var stores []Store
-	db.Preload("Address").Find(&stores)
+	if res := db.Preload("Address").Find(&stores); res.Error != nil {
+		c.Status(http.StatusServiceUnavailable).JSON(response.Error{Message: res.Error.Error()})
+		return
+	}
 
 	c.JSON(stores)
 }
