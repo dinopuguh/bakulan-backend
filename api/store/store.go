@@ -36,10 +36,7 @@ func GetAll(c *fiber.Ctx) {
 	db := database.DBConn
 
 	q := new(query)
-	if err := c.QueryParser(q); err != nil {
-		c.Status(http.StatusBadRequest).JSON(response.Error{Message: err.Error()})
-		return
-	}
+	c.QueryParser(q)
 
 	var stores []Store
 	if res := db.Preload("Address").Where("LOWER(name) LIKE ?", fmt.Sprintf("%%%s%%", strings.ToLower(q.Name))).Find(&stores); res.Error != nil {
