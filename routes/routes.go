@@ -14,15 +14,15 @@ func New() *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New())
 
-	app.Post("/api/v1/stores-register", store.New)
 	app.Post("/api/v1/stores-login", store.Login)
-
-	app.Post("/api/v1/users-register", user.New)
 	app.Post("/api/v1/users-login", user.Login)
 
+	app.Post("/api/v1/stores", store.New)
 	app.Get("/api/v1/stores", store.GetAll)
+	app.Get("/api/v1/stores/:id", store.GetById)
 	app.Delete("/api/v1/stores/:id", store.Delete)
 
+	app.Post("/api/v1/users", user.New)
 	app.Get("/api/v1/users", user.GetAll)
 	app.Delete("/api/v1/users/:id", user.Delete)
 

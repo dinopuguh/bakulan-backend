@@ -16,24 +16,8 @@ import (
 )
 
 var (
-	createdUserId uint
+	createdUser user.User
 )
-
-func TestGetAll(t *testing.T) {
-	err := database.Connect()
-	if err != nil {
-		panic("Can't connect database.")
-	}
-	router := routes.New()
-	t.Run("Get all users", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, "/api/v1/users", nil)
-
-		res, _ := router.Test(req, -1)
-		resBody, _ := ioutil.ReadAll(res.Body)
-
-		assert.Equalf(t, http.StatusOK, res.StatusCode, string(resBody))
-	})
-}
 
 func TestNew(t *testing.T) {
 	err := database.Connect()
@@ -84,7 +68,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reqBody, _ := json.Marshal(tt.args.data)
-			req, _ := http.NewRequest(http.MethodPost, "/api/v1/users-register", bytes.NewBuffer(reqBody))
+			req, _ := http.NewRequest(http.MethodPost, "/api/v1/users", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", tt.args.contentType)
 
 			res, _ := r.Test(req, -1)
@@ -98,16 +82,34 @@ func TestNew(t *testing.T) {
 
 				json.Unmarshal(resBody, &rb)
 
-				u := new(user.User)
 				userJson, _ := json.Marshal(rb.Owner.(map[string]interface{}))
-				json.Unmarshal(userJson, &u)
-
-				createdUserId = u.ID
+				json.Unmarshal(userJson, &createdUser)
 			}
 		})
 	}
 }
 
+func TestGetAll(t *testing.T) {
+	err := database.Connect()
+	if err != nil {
+		panic("Can't connect database.")
+	}
+	router := routes.New()
+	t.Run("Get all users", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/users", nil)
+
+		res, _ := router.Test(req, -1)
+		resBody, _ := ioutil.ReadAll(res.Body)
+
+		users := make([]user.User, 0)
+		users = append(users, createdUser)
+
+		expectedResBody, _ := json.Marshal(users)
+
+		assert.Equalf(t, http.StatusOK, res.StatusCode, string(resBody))
+		assert.Equalf(t, string(resBody), string(expectedResBody), string(resBody))
+	})
+}
 func TestLogin(t *testing.T) {
 	err := database.Connect()
 	if err != nil {
@@ -186,11 +188,11 @@ func TestDelete(t *testing.T) {
 		args args
 	}{
 		{"Valid delete user", args{
-			userId:     createdUserId,
+			userId:     createdUser.ID,
 			statusCode: http.StatusOK,
 		}},
 		{"User not found", args{
-			userId:     createdUserId + 1,
+			userId:     createdUser.ID + 1,
 			statusCode: http.StatusNotFound,
 		}},
 	}
