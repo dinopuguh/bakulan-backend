@@ -16,24 +16,8 @@ import (
 )
 
 var (
-	createdStoreId uint
+	createdStore store.Store
 )
-
-func TestGetAll(t *testing.T) {
-	err := database.Connect()
-	if err != nil {
-		panic("Can't connect database.")
-	}
-	router := routes.New()
-	t.Run("Get all users", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, "/api/v1/stores", nil)
-
-		res, _ := router.Test(req, -1)
-		resBody, _ := ioutil.ReadAll(res.Body)
-
-		assert.Equalf(t, http.StatusOK, res.StatusCode, string(resBody))
-	})
-}
 
 func TestNew(t *testing.T) {
 	err := database.Connect()
@@ -96,7 +80,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reqBody, _ := json.Marshal(tt.args.data)
-			req, _ := http.NewRequest(http.MethodPost, "/api/v1/stores-register", bytes.NewBuffer(reqBody))
+			req, _ := http.NewRequest(http.MethodPost, "/api/v1/stores", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", tt.args.contentType)
 
 			res, _ := r.Test(req, -1)
@@ -110,12 +94,88 @@ func TestNew(t *testing.T) {
 
 				json.Unmarshal(resBody, &rb)
 
-				s := new(store.Store)
 				storeJson, _ := json.Marshal(rb.Owner.(map[string]interface{}))
-				json.Unmarshal(storeJson, &s)
-
-				createdStoreId = s.ID
+				json.Unmarshal(storeJson, &createdStore)
 			}
+		})
+	}
+}
+
+func TestGetAll(t *testing.T) {
+	err := database.Connect()
+	if err != nil {
+		panic("Can't connect database.")
+	}
+	r := routes.New()
+
+	type args struct {
+		endpoint   string
+		statusCode int
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"Get all stores", args{
+			endpoint:   "/api/v1/stores",
+			statusCode: http.StatusOK,
+		}},
+		{"Search stores by name", args{
+			endpoint:   "/api/v1/stores?name=lu",
+			statusCode: http.StatusOK,
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest(http.MethodGet, tt.args.endpoint, nil)
+
+			res, _ := r.Test(req, -1)
+			resBody, _ := ioutil.ReadAll(res.Body)
+
+			stores := make([]store.Store, 0)
+			stores = append(stores, createdStore)
+
+			expectedResBody, _ := json.Marshal(stores)
+
+			assert.Equalf(t, tt.args.statusCode, res.StatusCode, string(resBody))
+			assert.Equalf(t, string(resBody), string(expectedResBody), string(resBody))
+		})
+	}
+}
+
+func TestGetById(t *testing.T) {
+	err := database.Connect()
+	if err != nil {
+		panic("Can't connect database.")
+	}
+	r := routes.New()
+
+	type args struct {
+		storeId    uint
+		statusCode int
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"Valid store get by id", args{
+			storeId:    createdStore.ID,
+			statusCode: http.StatusOK,
+		}},
+		{"Store not found", args{
+			storeId:    createdStore.ID + 1,
+			statusCode: http.StatusNotFound,
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoint := fmt.Sprintf("/api/v1/stores/%d", tt.args.storeId)
+			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+
+			res, _ := r.Test(req, -1)
+			resBody, _ := ioutil.ReadAll(res.Body)
+
+			assert.Equalf(t, tt.args.statusCode, res.StatusCode, string(resBody))
 		})
 	}
 }
@@ -198,11 +258,11 @@ func TestDelete(t *testing.T) {
 		args args
 	}{
 		{"Valid delete store", args{
-			storeId:    createdStoreId,
+			storeId:    createdStore.ID,
 			statusCode: http.StatusOK,
 		}},
 		{"Store not found", args{
-			storeId:    createdStoreId + 1,
+			storeId:    createdStore.ID + 1,
 			statusCode: http.StatusNotFound,
 		}},
 	}

@@ -1,7 +1,9 @@
 package store
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/dinopuguh/bakulan-backend/api/address"
 	"github.com/dinopuguh/bakulan-backend/api/auth"
@@ -26,16 +28,36 @@ type Store struct {
 	TypeID       int               `json:"type_id"`
 }
 
+type query struct {
+	Name string `query:"name"`
+}
+
 func GetAll(c *fiber.Ctx) {
 	db := database.DBConn
 
+	q := new(query)
+	c.QueryParser(q)
+
 	var stores []Store
-	if res := db.Preload("Address").Find(&stores); res.Error != nil {
+	if res := db.Preload("Address").Where("LOWER(name) LIKE ?", fmt.Sprintf("%%%s%%", strings.ToLower(q.Name))).Find(&stores); res.Error != nil {
 		c.Status(http.StatusServiceUnavailable).JSON(response.Error{Message: res.Error.Error()})
 		return
 	}
 
 	c.JSON(stores)
+}
+
+func GetById(c *fiber.Ctx) {
+	id := c.Params("id")
+	db := database.DBConn
+
+	var store Store
+	if res := db.Preload("Address").First(&store, id); res.RowsAffected == 0 {
+		c.Status(http.StatusNotFound).JSON(response.Error{Message: "Store not found."})
+		return
+	}
+
+	c.JSON(store)
 }
 
 func New(c *fiber.Ctx) {
@@ -79,7 +101,6 @@ func New(c *fiber.Ctx) {
 		Owner:       cst,
 		AccessToken: token,
 	})
-	return
 }
 
 func Login(c *fiber.Ctx) {
