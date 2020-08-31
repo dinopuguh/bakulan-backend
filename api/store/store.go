@@ -16,8 +16,8 @@ import (
 type Store struct {
 	gorm.Model
 	Name         string            `json:"name"`
-	Email        string            `json:"email" gorm:"unique"`
-	Password     string            `json:"-"`
+	Email        string            `json:"email"`
+	Password     string            `json:"password"`
 	Phone        string            `json:"phone"`
 	Open         string            `json:"open"`
 	Close        string            `json:"close"`
@@ -95,7 +95,7 @@ func Login(c *fiber.Ctx) {
 	res := db.Where("email = ?", login.Email).First(&store)
 
 	if res.RowsAffected == 0 {
-		c.Status(http.StatusUnauthorized).JSON(response.Error{Message: "Store not found."})
+		c.Status(http.StatusNotFound).JSON(response.Error{Message: "Store not found."})
 		return
 	}
 
@@ -114,4 +114,24 @@ func Login(c *fiber.Ctx) {
 		Owner:       store,
 		AccessToken: token,
 	})
+}
+
+func Delete(c *fiber.Ctx) {
+	id := c.Params("id")
+	db := database.DBConn
+
+	var store Store
+	res := db.First(&store, id)
+
+	if res.RowsAffected == 0 {
+		c.Status(http.StatusNotFound).JSON(response.Error{Message: "Store not found."})
+		return
+	}
+
+	if res = db.Delete(&store); res.Error != nil {
+		c.Status(http.StatusInternalServerError).JSON(response.Error{Message: res.Error.Error()})
+		return
+	}
+
+	c.JSON(response.Error{Message: "Store deleted."})
 }

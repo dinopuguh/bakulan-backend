@@ -21,6 +21,7 @@ func New() *fiber.App {
 	app.Post("/api/v1/users-login", user.Login)
 
 	app.Get("/api/v1/stores", store.GetAll)
+	app.Delete("/api/v1/stores/:id", store.Delete)
 
 	app.Get("/api/v1/users", user.GetAll)
 	app.Delete("/api/v1/users/:id", user.Delete)
