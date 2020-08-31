@@ -1,0 +1,2 @@
+# bakulan-backend
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f7a49e7fe55f4e0a898b287b8d628a02)](https://app.codacy.com/manual/dinopuguh/bakulan-backend?utm_source=github.com&utm_medium=referral&utm_content=dinopuguh/bakulan-backend&utm_campaign=Badge_Grade_Dashboard)
